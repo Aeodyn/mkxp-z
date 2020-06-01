@@ -220,8 +220,12 @@ public:
 
 	void setAniIndex(int value);
 
+	void setTone(const Vec4 &value);
+	void setColor(const Vec4 &value);
+	void setOpacity(float value);
+
 private:
-	GLint u_aniIndex;
+	GLint u_aniIndex, u_tone, u_color, u_opacity;
 };
 
 class FlashMapShader : public ShaderBase

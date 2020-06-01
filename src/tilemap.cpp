@@ -322,6 +322,13 @@ struct TilemapPrivate
 	/* Draw prepare call */
 	sigc::connection prepareCon;
 
+	NormValue opacity;
+	BlendType blendType;
+	Color *color;
+	Tone *tone;
+
+	EtcTemps tmp;
+
 	TilemapPrivate(Viewport *viewport)
 	    : viewport(viewport),
 	      tileset(0),
@@ -334,7 +341,12 @@ struct TilemapPrivate
 	      buffersDirty(false),
 	      mapViewportDirty(false),
 	      zOrderDirty(false),
-	      tilemapReady(false)
+	      tilemapReady(false),
+
+		  opacity(255),
+	      blendType(BlendNormal),
+	      color(&tmp.color),
+	      tone(&tmp.tone)
 	{
 		memset(autotiles, 0, sizeof(autotiles));
 
@@ -766,10 +778,14 @@ struct TilemapPrivate
 
 	void bindShader(ShaderBase *&shaderVar)
 	{
-		if (tiles.animated)
+		if (tiles.animated || color->hasEffect() || tone->hasEffect() || opacity != 255)
 		{
 			TilemapShader &tilemapShader = shState->shaders().tilemap;
 			tilemapShader.bind();
+			tilemapShader.applyViewportProj();
+			tilemapShader.setTone(tone->norm);
+			tilemapShader.setColor(color->norm);
+			tilemapShader.setOpacity(opacity.norm);
 			tilemapShader.setAniIndex(tiles.frameIdx);
 			shaderVar = &tilemapShader;
 		}
@@ -974,10 +990,15 @@ void GroundLayer::draw()
 	if (p->groundVert.size() == 0)
 		return;
 
+	if (!p->opacity)
+		return;
+
 	ShaderBase *shader;
 
 	p->bindShader(shader);
 	p->bindAtlas(*shader);
+
+	glState.blendMode.pushSet(p->blendType);
 
 	GLMeta::vaoBind(p->tiles.vao);
 
@@ -987,6 +1008,8 @@ void GroundLayer::draw()
 	GLMeta::vaoUnbind(p->tiles.vao);
 
 	p->flashMap.draw(flashAlpha[p->flashAlphaIdx] / 255.f, p->dispPos);
+
+	glState.blendMode.pop();
 }
 
 void GroundLayer::drawInt()
@@ -1029,12 +1052,16 @@ void ZLayer::draw()
 	p->bindShader(shader);
 	p->bindAtlas(*shader);
 
+	glState.blendMode.pushSet(p->blendType);
+
 	GLMeta::vaoBind(p->tiles.vao);
 
 	shader->setTranslation(p->dispPos);
 	drawInt();
 
 	GLMeta::vaoUnbind(p->tiles.vao);
+
+	glState.blendMode.pop();
 }
 
 void ZLayer::drawInt()
@@ -1147,6 +1174,11 @@ DEF_ATTR_RD_SIMPLE(Tilemap, Visible, bool, p->visible)
 DEF_ATTR_RD_SIMPLE(Tilemap, OX, int, p->origin.x)
 DEF_ATTR_RD_SIMPLE(Tilemap, OY, int, p->origin.y)
 
+DEF_ATTR_RD_SIMPLE(Tilemap, BlendType, int, p->blendType)
+DEF_ATTR_SIMPLE(Tilemap, Opacity,   int,     p->opacity)
+DEF_ATTR_SIMPLE(Tilemap, Color,     Color&, *p->color)
+DEF_ATTR_SIMPLE(Tilemap, Tone,      Tone&,  *p->tone)
+
 void Tilemap::setTileset(Bitmap *value)
 {
 	guardDisposed();
@@ -1248,6 +1280,31 @@ void Tilemap::setOY(int value)
 	p->origin.y = value;
 	p->zOrderDirty = true;
 	p->mapViewportDirty = true;
+}
+
+void Tilemap::setBlendType(int value)
+{
+	guardDisposed();
+
+	switch (value)
+	{
+	default :
+	case BlendNormal :
+		p->blendType = BlendNormal;
+		return;
+	case BlendAddition :
+		p->blendType = BlendAddition;
+		return;
+	case BlendSubstraction :
+		p->blendType = BlendSubstraction;
+		return;
+	}
+}
+
+void Tilemap::initDynAttribs()
+{
+	p->color = new Color;
+	p->tone = new Tone;
 }
 
 void Tilemap::releaseResources()
