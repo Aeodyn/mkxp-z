@@ -726,8 +726,30 @@ struct TilemapPrivate
 	{
 		clearQuadArrays();
 
-		for (int x = 0; x < viewpW; ++x)
-			for (int y = 0; y < viewpH; ++y)
+		int ox = viewpPos.x;
+		int oy = viewpPos.y;
+		int mapW = mapData->xSize();
+		int mapH = mapData->ySize();
+
+		int minX = 0;
+		int minY = 0;
+		if (ox < 0)
+			minX = -ox;
+		if (oy < 0)
+			minY = -oy;
+
+		// There could be off-by-one issues in these couple sections.
+		int maxX = viewpW;
+		int maxY = viewpH;
+		if (ox + maxX >= mapW)
+			maxX = mapW - ox - 1;
+		if (oy + maxY >= mapH)
+			maxY = mapH - oy - 1;
+
+		if ((minX > maxX) || (minY > maxY))
+			return;
+		for (int x = minX; x <= maxX; ++x)
+			for (int y = minY; y <= maxY; ++y)
 				for (int z = 0; z < mapData->zSize(); ++z)
 					handleTile(x, y, z);
 	}
