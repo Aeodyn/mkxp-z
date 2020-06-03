@@ -659,8 +659,8 @@ struct TilemapPrivate
 			Quad::setTexPosRect(v, texRect, posRect);
 
 			/* Iterate over 4 vertices */
-			for (size_t i = 0; i < 4; ++i)
-				array->push_back(v[i]);
+			for (size_t j = 0; j < 4; ++j)
+				array->push_back(v[j]);
 		}
 	}
 
@@ -689,6 +689,8 @@ struct TilemapPrivate
 		else
 		{
 			int layerInd = y + prio;
+			if (layerInd >= zlayersMax)
+				return;
 			targetArray = &zlayerVert[layerInd];
 		}
 
