@@ -525,6 +525,7 @@ TilemapShader::TilemapShader()
 	GET_U(opacity);
 
 	GET_U(aniIndex);
+	GET_U(atFrames);
 }
 
 void TilemapShader::setTone(const Vec4 &tone)
@@ -544,7 +545,12 @@ void TilemapShader::setOpacity(float value)
 
 void TilemapShader::setAniIndex(int value)
 {
-	gl.Uniform1f(u_aniIndex, value);
+	gl.Uniform1i(u_aniIndex, value);
+}
+
+void TilemapShader::setATFrames(int values[7])
+{
+	gl.Uniform1iv(u_atFrames, 7, values);
 }
 
 

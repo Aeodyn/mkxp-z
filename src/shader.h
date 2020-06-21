@@ -224,8 +224,10 @@ public:
 	void setColor(const Vec4 &value);
 	void setOpacity(float value);
 
+	void setATFrames(int values[7]);
+
 private:
-	GLint u_aniIndex, u_tone, u_color, u_opacity;
+	GLint u_aniIndex, u_tone, u_color, u_opacity, u_atFrames;
 };
 
 class FlashMapShader : public ShaderBase

@@ -263,8 +263,11 @@ struct TilemapPrivate
 		/* Indices of animated autotiles */
 		std::vector<uint8_t> animatedATs;
 
+		/* Whether each autotile is 3x4 or not */
 		bool smallATs[autotileCount] = {false};
-		uint8_t sATFrames[autotileCount];
+
+		/* The number of frames for each autotile */
+		int nATFrames[autotileCount] = {1};
 	} atlas;
 
 	/* Map viewport position */
@@ -288,7 +291,6 @@ struct TilemapPrivate
 		bool animated;
 
 		/* Animation state */
-		uint8_t frameIdx;
 		uint32_t aniIdx;
 	} tiles;
 
@@ -363,7 +365,6 @@ struct TilemapPrivate
 		atlas.efTilesetH = 0;
 
 		tiles.animated = false;
-		tiles.frameIdx = 0;
 		tiles.aniIdx = 0;
 
 		/* Init tile buffers */
@@ -456,11 +457,15 @@ struct TilemapPrivate
 			if (autotiles[i]->height() == 32)
 			{
 				atlas.smallATs[i] = true;
-				atlas.sATFrames[i] = autotiles[i]->width()/32;
+				atlas.nATFrames[i] = autotiles[i]->width()/32;
 				animatedATs.push_back(i);
 			}
-			else if (autotiles[i]->width() > autotileW)
-				animatedATs.push_back(i);
+			else
+			{
+				atlas.nATFrames[i] = autotiles[i]->width()/autotileW;
+				if (atlas.nATFrames[i] > 1)
+					animatedATs.push_back(i);
+			}
 		}
 
 		tiles.animated = !animatedATs.empty();
@@ -694,11 +699,8 @@ struct TilemapPrivate
 		}
 		else
 		{
-			int frame = (tiles.aniIdx / atFrameDur) % atlas.sATFrames[atInd];
 			FloatRect posRect(x*32, y*32, 32, 32);
-			int _x = 0;
-			int _y = atInd * autotileH + 32*(frame / atFrames);
-			FloatRect texRect(_x+0.5f, _y+0.5f, 31, 31);
+			FloatRect texRect(0.5f, atInd * autotileH + 0.5f, 31, 31);
 			SVertex v[4];
 			Quad::setTexPosRect(v, texRect, posRect);
 
@@ -854,7 +856,8 @@ struct TilemapPrivate
 			tilemapShader.setTone(tone->norm);
 			tilemapShader.setColor(color->norm);
 			tilemapShader.setOpacity(opacity.norm);
-			tilemapShader.setAniIndex(tiles.frameIdx);
+			tilemapShader.setAniIndex(tiles.aniIdx / atFrameDur);
+			tilemapShader.setATFrames(atlas.nATFrames);
 			shaderVar = &tilemapShader;
 		}
 		else
@@ -1219,8 +1222,6 @@ void Tilemap::update()
 	/* Animate autotiles */
 	if (!p->tiles.animated)
 		return;
-
-	p->tiles.frameIdx = (p->tiles.aniIdx / atFrameDur) % atFrames;
 
 	++p->tiles.aniIdx;
 }
