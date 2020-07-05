@@ -26,14 +26,14 @@ uniform lowp int atFrames[nAutotiles];
 void main()
 {
 	vec2 tex = texCoord;
-	lowp uint atIndex = int(tex.y / 128.0);
+	lowp uint atIndex = uint(tex.y / autotileH);
 
-	lowp float pred = float(tex.x <= atAreaW && tex.y <= atAreaH);
-	lowp uint frame = aniIndex % atFrames[atIndex];
+	lowp uint pred = uint(tex.x <= atAreaW && tex.y <= atAreaH);
+	lowp uint frame = uint(aniIndex % atFrames[atIndex]);
 	lowp uint col = frame % 8;
 	lowp uint row = frame / 8;
-	tex.x += col * atAniOffsetX * pred;
-	tex.y += row * atAniOffsetY * pred;
+	tex.x += atAniOffsetX * (col * pred);
+	tex.y += atAniOffsetY * (row * pred);
 
 	gl_Position = projMat * vec4(position + translation, 0, 1);
 
